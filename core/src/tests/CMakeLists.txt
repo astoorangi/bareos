@@ -279,3 +279,20 @@ add_test(NAME test_setdebug
 
 gtest_discover_tests(test_setdebug TEST_PREFIX gtest:)
 
+####### test_backtrace #####################################
+IF(HAVE_EXECINFO_H AND HAVE_BACKTRACE AND HAVE_BACKTRACE_SYMBOLS)
+  add_executable(test_backtrace test_backtrace.cc)
+
+  target_link_libraries(test_backtrace
+     bareos
+     ${GTEST_LIBRARIES}
+     ${GTEST_MAIN_LIBRARIES}
+  )
+
+  add_test(NAME test_backtrace
+      COMMAND test_backtrace
+  )
+
+  gtest_discover_tests(test_backtrace TEST_PREFIX gtest:)
+ENDIF()
+
