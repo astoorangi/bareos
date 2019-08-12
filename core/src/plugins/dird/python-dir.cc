@@ -557,7 +557,7 @@ static bpContext* PyGetbpContext(PyObject* pyCtx)
  */
 static inline bRC conv_python_retval(PyObject* pRetVal)
 {
-  return (bRC)PyInt_AsLong(pRetVal);
+  return (bRC)PyLong_AsLong(pRetVal);
 }
 
 /**
@@ -565,7 +565,7 @@ static inline bRC conv_python_retval(PyObject* pRetVal)
  */
 static inline PyObject* conv_retval_python(bRC retval)
 {
-  return (PyObject*)PyInt_FromLong((int)retval);
+  return (PyObject*)PyLong_FromLong((int)retval);
 }
 
 /**
@@ -594,11 +594,11 @@ static void PyErrorHandler(bpContext* ctx, int msgtype)
                             (char*)"OOO", type, value == NULL ? Py_None : value,
                             traceback == NULL ? Py_None : traceback);
 
-    emptyString = PyString_FromString("");
+    emptyString = PyUnicode_FromString("");
     strRetval =
         PyObject_CallMethod(emptyString, (char*)"join", (char*)"O", tbList);
 
-    error_string = strdup(PyString_AsString(strRetval));
+    error_string = strdup(PyBytes_AsString(strRetval));
 
     Py_DECREF(tbList);
     Py_DECREF(emptyString);
@@ -640,7 +640,7 @@ static bRC PyLoadModule(bpContext* ctx, void* value)
      */
     if (p_ctx->module_path) {
       sysPath = PySys_GetObject((char*)"path");
-      mPath = PyString_FromString(p_ctx->module_path);
+      mPath = PyUnicode_FromString(p_ctx->module_path);
       PyList_Append(sysPath, mPath);
       Py_DECREF(mPath);
       p_ctx->python_path_set = true;
@@ -654,7 +654,19 @@ static bRC PyLoadModule(bpContext* ctx, void* value)
     /*
      * Make our callback methods available for Python.
      */
-    p_ctx->pInstance = Py_InitModule("bareosdir", BareosDIRMethods);
+    static struct PyModuleDef moduledef = {
+      PyModuleDef_HEAD_INIT,
+      "bareosdir",     /* m_name */
+      NULL,  /* m_doc */
+      NULL,                  /* m_size */
+      BareosDIRMethods,    /* m_methods */
+      NULL,                /* m_reload */
+      NULL,                /* m_traverse */
+      NULL,                /* m_clear */
+      NULL,                /* m_free */
+    };
+
+    p_ctx->pInstance = PyModule_Create(&moduledef);
   }
 
   /*
@@ -663,7 +675,7 @@ static bRC PyLoadModule(bpContext* ctx, void* value)
   if (p_ctx->module_name) {
     Dmsg(ctx, debuglevel, "python-dir: Trying to load module with name %s\n",
          p_ctx->module_name);
-    pName = PyString_FromString(p_ctx->module_name);
+    pName = PyUnicode_FromString(p_ctx->module_name);
     p_ctx->pModule = PyImport_Import(pName);
     Py_DECREF(pName);
 
@@ -695,7 +707,7 @@ static bRC PyLoadModule(bpContext* ctx, void* value)
     if (pFunc && PyCallable_Check(pFunc)) {
       PyObject *pPluginDefinition, *pRetVal;
 
-      pPluginDefinition = PyString_FromString((char*)value);
+      pPluginDefinition = PyUnicode_FromString((char*)value);
       if (!pPluginDefinition) { goto bail_out; }
 
       pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
@@ -748,7 +760,7 @@ static bRC PyParsePluginDefinition(bpContext* ctx, void* value)
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject *pPluginDefinition, *pRetVal;
 
-    pPluginDefinition = PyString_FromString((char*)value);
+    pPluginDefinition = PyUnicode_FromString((char*)value);
     if (!pPluginDefinition) { goto bail_out; }
 
     pRetVal = PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext,
@@ -800,7 +812,7 @@ static bRC PyHandlePluginEvent(bpContext* ctx, bDirEvent* event, void* value)
   if (pFunc && PyCallable_Check(pFunc)) {
     PyObject *pEventType, *pRetVal;
 
-    pEventType = PyInt_FromLong(event->eventType);
+    pEventType = PyLong_FromLong(event->eventType);
 
     pRetVal =
         PyObject_CallFunctionObjArgs(pFunc, p_ctx->bpContext, pEventType, NULL);
@@ -853,7 +865,7 @@ static PyObject* PyBareosGetValue(PyObject* self, PyObject* args)
 
       ctx = PyGetbpContext(pyCtx);
       if (bfuncs->getBareosValue(ctx, (brDirVariable)var, &value) == bRC_OK) {
-        pRetVal = PyInt_FromLong(value);
+        pRetVal = PyLong_FromLong(value);
       }
       break;
     }
@@ -886,7 +898,7 @@ static PyObject* PyBareosGetValue(PyObject* self, PyObject* args)
 
       ctx = PyGetbpContext(pyCtx);
       if (bfuncs->getBareosValue(ctx, (brDirVariable)var, &value) == bRC_OK) {
-        if (value) { pRetVal = PyString_FromString(value); }
+        if (value) { pRetVal = PyUnicode_FromString(value); }
       }
       break;
     }
@@ -894,7 +906,7 @@ static PyObject* PyBareosGetValue(PyObject* self, PyObject* args)
       char* value = NULL;
 
       if (bfuncs->getBareosValue(NULL, (brDirVariable)var, &value) == bRC_OK) {
-        if (value) { pRetVal = PyString_FromString(value); }
+        if (value) { pRetVal = PyUnicode_FromString(value); }
       }
       break;
     }
@@ -933,7 +945,7 @@ static PyObject* PyBareosSetValue(PyObject* self, PyObject* args)
       char* value;
 
       ctx = PyGetbpContext(pyCtx);
-      value = PyString_AsString(pyValue);
+      value = PyBytes_AsString(pyValue);
       if (value) {
         retval = bfuncs->setBareosValue(ctx, (bwDirVariable)var, value);
       }
@@ -945,7 +957,7 @@ static PyObject* PyBareosSetValue(PyObject* self, PyObject* args)
       int value;
 
       ctx = PyGetbpContext(pyCtx);
-      value = PyInt_AsLong(pyValue);
+      value = PyLong_AsLong(pyValue);
       if (value >= 0) {
         retval = bfuncs->setBareosValue(ctx, (bwDirVariable)var, &value);
       }
@@ -1038,7 +1050,7 @@ static PyObject* PyBareosRegisterEvents(PyObject* self, PyObject* args)
   ctx = PyGetbpContext(pyCtx);
   for (int i = 0; i < len; i++) {
     pyEvent = PySequence_Fast_GET_ITEM(pySeq, i);
-    event = PyInt_AsLong(pyEvent);
+    event = PyLong_AsLong(pyEvent);
 
     if (event >= bDirEventJobStart && event <= bDirEventGetScratch) {
       Dmsg(ctx, debuglevel,
@@ -1079,7 +1091,7 @@ static PyObject* PyBareosUnRegisterEvents(PyObject* self, PyObject* args)
   ctx = PyGetbpContext(pyCtx);
   for (int i = 0; i < len; i++) {
     pyEvent = PySequence_Fast_GET_ITEM(pySeq, i);
-    event = PyInt_AsLong(pyEvent);
+    event = PyLong_AsLong(pyEvent);
 
     if (event >= bDirEventJobStart && event <= bDirEventGetScratch) {
       Dmsg(ctx, debuglevel, "PyBareosUnRegisterEvents: registering event %d\n",
@@ -1114,7 +1126,7 @@ static PyObject* PyBareosGetInstanceCount(PyObject* self, PyObject* args)
 
   ctx = PyGetbpContext(pyCtx);
   if (bfuncs->getInstanceCount(ctx, &value) == bRC_OK) {
-    pRetVal = PyInt_FromLong(value);
+    pRetVal = PyLong_FromLong(value);
   }
 
   if (!pRetVal) {

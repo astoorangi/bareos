@@ -34,8 +34,6 @@ IF(HAVE_WIN32)
 
    link_directories(${PROJECT_SOURCE_DIR}/src/win32/plugins/python/lib/${WINDOWS_BITS})
    add_definitions(-DMS_WIN${WINDOWS_BITS})
-ELSE()
-   include_directories(/usr/include/python2.7)
 ENDIF()
 
 
