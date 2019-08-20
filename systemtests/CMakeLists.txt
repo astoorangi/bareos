@@ -180,6 +180,7 @@ set(SYSTEM_TESTS
   copy-remote-bscan
   bconsole-status-client
   python-fd-plugin-local-fileset-test
+  python-dir-plugin-test
 )
 
 set(SYSTEM_TESTS_DISABLED
