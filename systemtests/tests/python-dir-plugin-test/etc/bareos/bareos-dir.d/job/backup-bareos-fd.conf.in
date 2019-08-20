@@ -2,5 +2,4 @@ Job {
   Name = "backup-bareos-fd"
   JobDefs = "DefaultJob"
   Client = "bareos-fd"
-  FileSet = "PluginTest"
 }

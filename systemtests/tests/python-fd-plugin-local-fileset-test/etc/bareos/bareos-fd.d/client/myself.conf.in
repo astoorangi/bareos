@@ -6,7 +6,7 @@ Client {
   # if "Plugin Names" is defined, only the specified plugins will be loaded,
   # otherwise all filedaemon plugins (*-fd.so) from the "Plugin Directory".
   #
-  Plugin Directory = "@CMAKE_BINARY_DIR@/core/src/plugins/filed"
+  Plugin Directory = "@plugindir@/filed"
   Plugin Names = "python"
 
   # if compatible is set to yes, we are compatible with bacula
